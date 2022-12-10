@@ -1,73 +1,71 @@
-resource "aws_s3_bucket" "b" {
-  bucket = "patryk-nowak-terraform-bucket"
-
-  tags = {
-    Name        = "Patryk bucket"
-    Environment = "Dev"
-  }
+resource "aws_s3_bucket" "patryk-nowak-bucket" {
+  bucket = var.bucketName
 }
 
-resource "aws_s3_bucket_acl" "ACL example" {
-  bucket = patryk-nowak-terraform-bucket
-  acl    = "private"
+resource "aws_s3_bucket_acl" "patryk-nowak-bucket" {
+  bucket = aws_s3_bucket.patryk-nowak-bucket.id
+  acl    = var.aclType
 }
 
-resource "aws_s3_bucket_website_configuration" "example" {
-  bucket = patryk-nowak-terraform-bucket
-
-  index_document {
-    suffix = "index.html"
-  }
-
-  error_document {
-    key = "error.html"
-  }
-
-  routing_rule {
-    condition {
-      key_prefix_equals = "docs/"
-    }
-    redirect {
-      replace_key_prefix_with = "documents/"
-    }
-  }
+resource "aws_s3_object" "patryk-nowak-bucket" {
+	bucket = aws_s3_bucket.patryk-nowak-bucket.id
+	key = var.objectKey
 }
 
-resource "aws_s3_bucket" "example" {
-  bucket = "patryk-nowak-terraform-bucket"
-}
+resource "aws_s3_bucket_policy" "bucket_policy" {
+	bucket = aws_s3_bucket.patryk-nowak-bucket.id
 
-resource "aws_s3_bucket_acl" "example_bucket_acl" {
-  bucket = "patryk-nowak-terraform-bucket"
-  acl    = "private"
+	policy = <<POLICY
+{
+"Version": "2012-10-17",
+"Statement": [
+{
+"Sid": "PublicReadGetObject",
+"Effect": "Allow",
+"Principal": "*",
+"Action": "s3.GetObject",
+"Resource": "arn:aws:s3:::patryk-nowak-bucket/*"
 }
-
-resource "aws_s3_bucket" "example" {
-  bucket = "patryk-nowak-terraform-bucket"
+]
 }
-
-resource "aws_s3_bucket_policy" "allow_access_from_another_account" {
-  bucket = patryk-nowak-terraform-bucket
-  policy = data.aws_iam_policy_document.allow_access_from_another_account.json
+POLICY
 }
 
 data "aws_iam_policy_document" "allow_access_from_another_account" {
-  statement {
-    principals {
-      type        = "AWS"
-      identifiers = ["123456789012"]
-    }
+	statement {
+		principals {
+			type = var.policyDocPrincipalsType
+			identifiers = var.policyDocPrincipalsIdentifiers
+			}
+		actions = var.policyDocPrincipalsActions
 
-    actions = [
-      "s3:GetObject",
-      "s3:ListBucket",
-    ]
-
-    resources = [
-      aws_s3_bucket.example.arn,
-      "${aws_s3_bucket.example.arn}/*",
-    ]
-  }
+		resources = [
+		aws_s3_bucket.patryk-nowak-bucket.arn,
+		"${aws_s3_bucket.patryk-nowak-bucket.arn}/*",
+		]
+	}
 }
 
+resource "aws_s3_bucket_website_configuration" "patryk-nowak-bucket" {
+	bucket = aws_s3_bucket.patryk-nowak-bucket.bucket
 
+	index_document{
+	suffix = var.indexWebFile
+	}
+
+	error_document{
+		key = var.errorWebFile
+	}
+
+	routing_rules = <<EOF
+	[{
+		"Condition": {
+			"KeyPrefixEquals": "docs/"
+	},
+	"Redirect": {
+		"ReplaceKeyPrefixWith": ""
+	}
+}]
+EOF
+
+}

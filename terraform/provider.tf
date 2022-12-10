@@ -10,3 +10,4 @@ provider "aws" {
  s3 = "http://s3.localhost.localstack.cloud:4566"
  }
 }
+
